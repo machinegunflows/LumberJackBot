@@ -1,32 +1,28 @@
-import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 
-public class Screenshot {
-
+public class Threading implements Runnable, ActionListener {
     /** Color that indicates that the side is obstructed: java.awt.Color[r=126,g=173,b=79] and java.awt.Color[r=145,g=196,b=96] */
     private final static Color right_color = new Color(126, 173, 79);
     private final static Color left_color = new Color(145, 196, 96);
 
-    public static void main(String[] args) throws AWTException, IOException {
+    public Threading() {
+        running = true;
+        isPaused = false;
+    }
 
-//        Robot robot = new Robot();
-//        BufferedImage left = robot.createScreenCapture(new Rectangle(1320, 550, 20, 80));
-//        BufferedImage right = robot.createScreenCapture(new Rectangle(1520, 550, 20, 80));
-//
-//        File outputfile = new File("left.png");
-//        ImageIO.write(left, "png", outputfile);
-//        outputfile = new File("right.png");
-//        ImageIO.write(right, "png", outputfile);
-//
-//        System.out.println(new Color(left.getRGB(0,0)));
+    volatile boolean running;
+    volatile boolean isPaused;
 
-
+    @Override
+    public void run() {
         char side = 'l';
-        while (true) {
+        while (running) {
+            while (!isPaused) {
+                Thread.onSpinWait();
                 BufferedImage left = null;
                 BufferedImage right = null;
                 try {
@@ -40,11 +36,13 @@ public class Screenshot {
                     if (side == 'l') {
                         assert left != null;
                         Color c = new Color(left.getRGB(0,0));
+                        System.out.println(c.toString());
                         left_obstructed = isObstructed(convertTo2DUsingGetRGB(left));
                     } else {
                         assert right != null;
                         Color c = new Color(right.getRGB(0,0));
                         right_obstructed = isObstructed(convertTo2DUsingGetRGB(right));
+                        System.out.println(c.toString());
                     }
 
                     if (right_obstructed) {
@@ -65,12 +63,15 @@ public class Screenshot {
                     e.printStackTrace();
                 }
                 try {
-                    Thread.sleep(27);
+                    Thread.sleep(30);
                 } catch(InterruptedException e) {
                     return;
                 }
             }
+        }
+
     }
+
 
     /** From Stackoverflow
      * https://stackoverflow.com/questions/6524196/java-get-pixel-array-from-image
@@ -88,7 +89,7 @@ public class Screenshot {
         return result;
     }
 
-    public static boolean isObstructed(int[][] arr) {
+    public boolean isObstructed(int[][] arr) {
         for (int[] a : arr) {
             for (int i : a) {
                 Color c = new Color(i);
@@ -100,4 +101,15 @@ public class Screenshot {
         return false;
     }
 
+    public static void main(String[] args) {
+        Thread t = new Thread(new Threading());
+        t.start();
+
+
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent actionEvent) {
+
+    }
 }
